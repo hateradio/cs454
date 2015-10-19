@@ -1,0 +1,15 @@
+{
+  "name": "homework3",
+  "version": "1.0.0",
+  "description": "Homework3",
+  "main": "cli.js",
+  "scripts": {
+    "test": "test"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "yargs": "^3.27.0",
+    "superagent": "^1.4.0"
+  }
+}
