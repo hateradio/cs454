@@ -1,4 +1,5 @@
-/*jslint indent: 4, maxerr: 50, node: true */
+/*jslint indent: 4, maxerr: 50, node: true, vars: true */
+// FG - CS454
 
 (function () {
 
@@ -14,16 +15,27 @@
 	}
 
 	MathApp.prototype.init = function () {
-		console.log('this: ', this);
+		// console.info('this: ', this);
 		if (this.isValid()) {
 			this.request();
 		} else {
-			this.invalid();
+			this.invalidMessage();
 		}
 	};
 
 	MathApp.prototype.isValid = function () {
-		return this.type && (this.number > 0 || this.number);
+		// console.info(typeof this.number);
+
+		if (!this.type) { return false; }
+
+		if (this.type === 'date' && typeof this.number === 'string') {
+			this.number = this.number.trim();
+			return this.number.indexOf('/') !== -1;
+		}
+
+		if (typeof this.number === 'number') {
+			return true;
+		}
 	};
 
 	MathApp.prototype.detectType = function (flags) {
@@ -66,19 +78,22 @@
 				number: this.number,
 				found: found,
 				type: this.type,
-				saved: this.dateFormat(new Date()) 
+				saved: this.dateFormat(new Date())
 			};
 
 		function write(array) {
-			fs.writeFile(filename, JSON.stringify(array, null, 2), function (err) {
+			var text = JSON.stringify(array, null, 2);
+
+			fs.writeFile(filename, text, function (err) {
 				if (err) {
 					throw err;
 				}
 
-				console.log('File Saved!');
+				console.log('facts.json\n', text);
+				// console.info('File Saved!');
 			});
 		}
-		
+
 		function read(err, txt) {
 			if (err) {
 				throw err;
@@ -87,8 +102,6 @@
 			try { prev = JSON.parse(txt); } catch (e) {}
 
 			prev.push(data);
-
-			console.log('prev', prev);
 			write(prev);
 		}
 
@@ -99,7 +112,7 @@
 		var uri = 'http://numbersapi.com/' + this.number + '/' + this.type,
 			self = this;
 
-		console.info(uri);
+		// console.info(uri);
 
 		function request(err, response) {
 			if (err) {
@@ -111,17 +124,17 @@
 			if (self.save) {
 				self.write(response.text, true);
 			}
-		};
+		}
 
 		superagent.get(uri).end(request);
 	};
 
-	MathApp.prototype.invalid = function () {
+	MathApp.prototype.invalidMessage = function () {
 		console.log('Please enter a valid flag! View help for more information.');
 	};
 
 	module.exports.run = function (flags) {
-		// console.log('flags', flags);
+		// console.info('flags', flags);
 		var math = new MathApp(flags);
 		math.init();
 	};
