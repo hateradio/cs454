@@ -1,156 +1,262 @@
 /*jslint indent: 4, maxerr: 50, vars: true */
 
-// // (function () {
-angular.module('todoApp', [])
-	.controller('TodoCtrl', function ($scope) {
-		'use strict';
+var app = angular.module('todoApp', []);
+app.controller('TodoCtrl', function ($scope, $filter) {
+	'use strict';
 
-		var db = {
-			groups: [],
-			users: [],
-			tasks: []
-		};
-
-		$scope.reassign = false;
-
-		function Group(name, description) {
-			this.name = name;
-			this.description = description;
-			this.id = db.groups.push(this);
-		}
-
-		Group.prototype.hasUsers = function () {
-			var id = this.id;
-			return db.users.some(function (user) {
-				return user.groupId === id;
-			});
-		};
-
-		Group.prototype.users = function () {
-			var id = this.id;
-			return db.users.filter(function (user) {
-				return user.groupId === id;
-			});
-		};
-
-		Group.prototype.usersMinus = function (idList) {
-			return this.users().filter(function (u) {
-				return idList.indexOf(u.id) === -1;
-			});
-		};
-		
-		Group.prototype.addUser = function (text) {
-			return text && text.trim() ? new User(text.trim(), this.id) : null;
-		};
-
-		Group.prototype.remove = function () {
-			this.users().forEach(function (user) {
-				user.remove();
-			});
-
-			delete db.groups[this.id - 1];
-		};
-
-		$scope.newGroup = function () {
-			if (!$scope.ngroup) {
-				return;
+	var db = {
+		groups: [],
+		users: [],
+		tasks: [],
+		count: function (table) {
+			if (db[table]) {
+				return $filter('filter')(db[table], function (e) { return e.id > 0; }).length;
 			}
+			return null;
+		}
+	};
 
-			var name = $scope.ngroup.name,
-				description = $scope.ngroup.description || '';
+	function Group(name, description) {
+		this.name = name;
+		this.description = description;
+		this.id = db.groups.push(this);
+	}
 
-			console.log($scope.ngroup);
+	Group.prototype.hasUsers = function () {
+		var id = this.id;
+		return db.users.some(function (user) {
+			return user.groupId === id;
+		});
+	};
 
-			delete $scope.ngroup;
-			return name && name.trim() ? new Group(name.trim(), description.trim()) : null;
-		};
+	Group.prototype.users = function (query) {
+		var id = this.id;
+		query = query ||  { groupId: id };
+		return $filter('filter')(db.users, query);
+	};
 
-		function User(name, groupId) {
-			this.name = name;
-			this.groupId = groupId;
-			this.id = db.users.push(this);
+	Group.prototype.usersExcept = function (idList) {
+		var id = this.id;
+		return this.users(function (u) {
+			return u.groupId === id && idList.indexOf(u.id) === -1;
+		});
+	};
+
+	Group.prototype.addUser = function (state) {
+		var text = state.userName;
+		state.userName = null;
+		return text && text.trim() ? new User(text.trim(), this.id) : null;
+	};
+
+	Group.prototype.remove = function () {
+		this.users().forEach(function (user) {
+			user.remove();
+		});
+
+		delete db.groups[this.id - 1];
+	};
+
+	Group.prototype.addTask = function (name) {
+		return name && name.trim() ? new Task(name.trim(), this.id) : null;
+	};
+
+	Group.prototype.tasks = function (query) {
+		var id = this.id;
+		query = query || { groupId: id };
+		return $filter('filter')(db.tasks, query);
+	};
+
+	Group.prototype.unassignedTasks = function () {
+		var id = this.id;
+		return this.tasks(function (t) { return t.groupId === id && !t.userId; });
+	};
+
+	Group.prototype.finishedTasks = function () {
+		var id = this.id;
+		return this.tasks(function (t) { return t.groupId === id && t.done; });
+	};
+
+	$scope.newGroup = function () {
+		if (!$scope.ngroup) {
+			return;
 		}
 
-		User.prototype.tasks = function () {
-			var id = this.id;
-			return db.tasks.filter(function (task) {
-				return task.userId === id;
-			});
-		};
+		var name = $scope.ngroup.name,
+			description = $scope.ngroup.description || '';
 
-		User.prototype.hasTasks = function () {
-			var id = this.id;
-			return db.tasks.some(function (task) {
-				return task.userId === id;
-			});
-		};
+		console.log($scope.ngroup);
 
-		User.prototype.addTask = function (text) {
-			return text && text.trim() ? new Task(text.trim(), this.id) : null;
-		};
+		delete $scope.ngroup;
+		return name && name.trim() ? new Group(name.trim(), description.trim()) : null;
+	};
 
-		User.prototype.remove = function () {
-			this.tasks().forEach(function (task) {
-				task.remove();
-			});
+	function User(name, groupId) {
+		this.name = name;
+		this.groupId = groupId;
+		this.id = db.users.push(this);
+	}
 
-			delete db.users[this.id - 1];
-		};
+	User.prototype.tasks = function () {
+		var id = this.id;
+		return $filter('filter')(db.tasks, { userId: id });
+	};
 
-		function Task(text, userId, done) {
-			this.done = !!done;
-			this.text = text;
+	User.prototype.hasTasks = function () {
+		var id = this.id;
+		return db.tasks.some(function (task) {
+			return task.userId === id;
+		});
+	};
+
+	User.prototype.addTask = function (name) {
+		return name && name.trim() ? new Task(name.trim(), this.groupId, this.id) : null;
+	};
+
+	User.prototype.remove = function () {
+		this.tasks().forEach(function (task) {
+			task.remove();
+		});
+
+		delete db.users[this.id - 1];
+	};
+
+	function Task(text, groupId, userId, done) {
+		this.done = !!done;
+		this.text = text;
+		this.groupId = groupId;
+		this.userId = userId;
+		this.id = db.tasks.push(this);
+	}
+
+	Task.prototype.belongsTo = function (userId) {
+		return this.userId === +userId;
+	};
+
+	Task.prototype.reassignTo = function (userId) {
+		userId = +userId;
+
+		console.log(userId);
+		if (userId > 0 && angular.isNumber(userId)) {
+			console.log('reasigned to user: ' + userId);
 			this.userId = userId;
-			this.id = db.tasks.push(this);
 		}
+	};
 
-		Task.prototype.belongsTo = function (userId) {
-			return this.userId === +userId;
-		};
+	Task.prototype.remove = function () {
+		delete db.tasks[this.id - 1];
+	};
 
-		Task.prototype.reassignTo = function (userId) {
-			userId = +userId;
+	var g1 = new Group('Create & Manage Groups', 'The first group');
+	var g2 = new Group('Tasks', 'The second group');
+	var g3 = new Group('Computer', 'The third group');
+	var g4 = new Group('Documentation', 'The fourth group');
 
-			console.log($scope.newselection);
-			if (angular.isNumber(userId)) {
-				this.userId = userId;
-			}
-		};
+	var u1 = new User('User1', 1);
+	var u2 = new User('User2', 1);
+	var u3 = new User('User3', 2);
+	var u4 = new User('User4', 2);
+	var u5 = new User('User5', 3);
+	var u6 = new User('User6', 3);
+	var u7 = new User('User7', 4);
 
-		Task.prototype.remove = function () {
-			delete db.tasks[this.id - 1];
-		};
+	var t1 = new Task('A group is a collection of Students.', 1, 1);
+	var t2 = new Task('A group should have a Node Module associated with it.', 1, 1, true);
+	var t3 = new Task('A group should have a "Description" property that outlines the module that is being presented.', 1, 1, true);
+	var t4 = new Task('Your application should allow Students to be added/removed from a group', 1, 2);
+	var t5 = new Task('Your app should allow groups to be deleted', 1, 2);
+	var t6 = new Task('Your application should allow new tasks to be created.', 2, 3, true);
+	var t7 = new Task('Your application should allow tasks to be assigned to individual members of a team.', 2, 3);
+	var t8 = new Task('Your app should allow tasks to be marked as done, not-done, and also be deleted.', 2, 3, true);
+	var t9 = new Task('T9', 2, 4);
+	var t10 = new Task('T10', 2, 4);
+	var t11 = new Task('T11', 2, 4);
+	var t12 = new Task('T12', 3, 6);
+	var t13 = new Task('T13', 3, 6);
+	var t14 = new Task('M1', 1);
+	t14 = new Task('M2', 1);
+	t14 = new Task('M3', 1);
 
-		var g1 = new Group('Create & Manage Groups', 'A group');
-		var g2 = new Group('Tasks', 'B group');
-		var g3 = new Group('C', 'C group');
-		var g4 = new Group('D', 'D group');
+	// console.log(db);
+	// console.info(Object.keys(db.tasks));
+	// console.info(db.tasks);
 
-		var u1 = new User('U1', 1);
-		var u2 = new User('U2', 1);
-		var u3 = new User('U3', 2);
-		var u4 = new User('U4', 2);
-		var u5 = new User('U5', 3);
-		var u6 = new User('U6', 3);
-		var u7 = new User('U7', 4);
+	$scope.db = db;
+});
 
-		var t1 = new Task('A group is a collection of Students.', 1);
-		var t2 = new Task('A group should have a Node Module associated with it.', 1, true);
-		var t3 = new Task('A group should have a "Description" property that outlines the module that is being presented.', 1, true);
-		var t4 = new Task('Your application should allow Students to be added/removed from a group', 2);
-		var t5 = new Task('Your app should allow groups to be deleted', 2);
-		var t6 = new Task('Your application should allow new tasks to be created.', 3, true);
-		var t7 = new Task('Your application should allow tasks to be assigned to individual members of a team.', 3);
-		var t8 = new Task('Your app should allow tasks to be marked as done, not-done, and also be deleted.', 3, true);
-		var t9 = new Task('T9', 4);
-		var t10 = new Task('T10', 4);
-		var t11 = new Task('T11', 4);
-		var t12 = new Task('T12', 6);
-		var t13 = new Task('T13', 6);
+app.directive('addTask', function () {
+	'use strict';
 
-		// console.log(db);
-		// console.info(Object.keys(db.tasks));
-		console.info(db.tasks);
+	return {
+		restrict: 'E',
+		scope: {
+			entity: '='
+		},
+		link: function (scope) {
+			scope.addTask = function () {
+				// console.log('entity', scope.entity, scope.taskName);
+				console.log(scope.users);
+				if (scope.entity) {
+					scope.entity.addTask(scope.taskName);
+				}
+				scope.taskName = null;
+			};
+		},
+		template: ['<form ng-submit="addTask()">',
+				'<div class="form-group">',
+					'<div class="input-group">',
+						'<div class="input-group-addon"><span class="glyphicon glyphicon-tent"></span></div>',
+						'<input type="text" class="form-control" ng-model="taskName" size="30" placeholder="Add new task">',
+						'<div class="input-group-addon"><button type=submit class="addon btn btn-link btn-xs">Add</button></div>',
+					'</div>',
+				'</div>',
+			'</form>'].join('')
+	};
+});
 
-		$scope.db = db;
-	});
+app.directive('taskItem', function () {
+	'use strict';
+
+	return {
+		restrict: 'E',
+		link: function (scope, element, attrs) {
+			scope.updateUsers = function () {
+				if (attrs.exclude === 'true') {
+					scope.users = scope.group.usersExcept([scope.user.id]);
+				} else {
+					scope.users = scope.group.users();
+				}
+			};
+			
+			scope.users = scope.updateUsers();
+
+			scope.click = function () {
+				scope.updateUsers();
+				scope.toggle = !scope.toggle;
+			};
+
+			scope.reassign = function () {
+				scope.task.reassignTo(scope.userId);
+				scope.userId = null;
+				scope.toggle = null;
+			};
+		},
+		template: ['		<div class="checkbox">',
+								' <button class="btn btn-warning btn-xs" ng-click="task.remove()"><span class="glyphicon glyphicon-remove"></span></button>',
+								' <button class="btn btn-info btn-xs" ng-click="click()" title="Reassign to a user"><span class="glyphicon glyphicon-send"></span> Reassign</button> ',
+									' <button class="btn btn-success btn-xs" ng-show="task.done"><span class="glyphicon glyphicon-ok"></span> Done</button> ',
+								'<label task-complete={{task.done}}>',
+									' <input type="checkbox" ng-model="task.done"> ',
+									' {{task.text}}',
+								'</label>',
+							'</div>',
+							'<div class="form-group" ng-show="toggle">',
+								'<form>',
+									'<select class="form-control" ng-model="userId" type="number"',
+									  'ng-change="reassign()" ng-click="updateUsers()"',
+									  'ng-options="user.id as user.name for user in users">',
+									  '<option value="">&gt; Reasign Task: Select Student</option>',
+									'</select>',
+								'</form>',
+							'</div>'].join('')
+	};
+});
