@@ -35,12 +35,14 @@
 				<div class="col-xs-10 col-xs-offset-1">
 					<div class="alert alert-success">
 						<ul class="">
-							<li>Group count (totals) are displayed in the first panel</li>
+							<li>Group count (total) is displayed in the first panel</li>
+							<li>Save or Clear your group data by pressing the appropriate buttons (uses <code>localStorage</code>)</li>
 							<li>Other counts are displayed under the group's name</li>
 							<li>Create a group to add tasks and students</li>
 							<li>Each group displays all of its tasks organized by student</li>
 							<li>Tasks without a student are displayed under the "unassigned" section</li>
-							<li>Any task can be <strong><span class="glyphicon glyphicon-send"></span> reassigned</strong> to any user in a group</li>
+							<li>Any task can be <strong><span class="glyphicon glyphicon-send"></span> Reassigned</strong> to any user in a group</li>
+							<li><strong><span class="glyphicon glyphicon-ok"></span> Done</strong> appears next to completed tasks</li>
 							<li>Remove groups/users by clicking the red buttons</li>
 							<li>Remove tasks by clicking the yellow buttons</li>
 							<li></li>
@@ -48,10 +50,11 @@
 					</div>
 				</div>
 			</div>
-		
 		<div class="panel panel-default">
 		  <div class="panel-heading">
-			<h2><span class="glyphicon glyphicon-apple"></span> Add A New Group  <span class="btn btn-info">Groups <span class="badge">{{db.count('groups')}}</span></span></h2>
+			<h2><span class="glyphicon glyphicon-apple"></span> Add A New Group <span class="btn btn-info">Groups <span class="badge">{{db.count('groups')}}</span></span>
+			<span class="btn btn-success" ng-click="save()">Save</span>
+			<span class="btn btn-warning" ng-click="clear()">Clear</span></h2>
 		  </div>
 			<div class="panel-body">
 				<form ng-submit="newGroup()">
@@ -73,7 +76,7 @@
 			</div>
 		</div>
 
-			  <div class="panel panel-default" ng-repeat="group in db.groups track by $index" ng-if="group.name">
+			  <div class="panel panel-default" ng-repeat="group in db.tables.groups track by $index" ng-if="group.name">
 				<div class="panel-heading">
 					<h2><button class="btn btn-danger pull-right" ng-click="group.remove()"><span class="glyphicon glyphicon-remove"></span> Remove Group</button> <span class="glyphicon glyphicon-blackboard"></span> {{group.name}}</h2>
 					<p ng-show="group.description"><small><span class="glyphicon glyphicon-chevron-right"></span> {{group.description}}</small></p>
@@ -86,8 +89,10 @@
 				</div>
 				<div class="panel-body">
 				
-				<h3>Add Student</h3>
+				<div class="row">
+				<div class=col-md-12>
 				<div class="form-group">
+					<h3>Add Students</h3>
 					<form ng-submit="group.addUser(state)">
 						<div class="input-group">
 							<div class="input-group-addon"><span class="glyphicon glyphicon-user"></span></div>
@@ -97,7 +102,7 @@
 					</form>
 				</div>
 
-				<h3>Add Task</h3>
+				<h3>Add Tasks</h3>
 				<div class="well well-sm">
 					<h4><span class="glyphicon glyphicon-list-alt"></span> Unassigned</h4>
 					<ul ng-if="group.unassignedTasks().length > 0" class="list-unstyled">
@@ -109,22 +114,26 @@
 					<add-task entity="group"></add-task>
 				</div>
 				
-				<div ng-if="group.hasUsers()">
-					<h3>User Tasks</h3>
-					<div ng-repeat="user in group.users() track by $index" class="well well-sm">
+				<div class="form-group" ng-if="group.hasUsers()">
+					
+					<h3>Add User Tasks</h3>
+					<div ng-repeat="user in group.users() track by $index">  <!-- class="col-xs-6" -->
+						<div class="well well-sm">
 						<h4><button class="btn btn-danger btn-xs pull-right" ng-click="user.remove()"><span class="glyphicon glyphicon-remove"></span> Remove User</button> <span class="glyphicon glyphicon-inbox"></span> {{user.name}}</h4>
 
 						<ul ng-if="user.hasTasks()" class="list-unstyled">
 							<li ng-repeat="task in user.tasks() track by $index">
 								<task-item exclude=true></task-item>
 							</li>
-						</ul>
-						
+						 </ul>
 						<add-task entity="user"></add-task>
+					</div>
+						
 				  </div>
 			  </div>
-		  </div>
-
+			</div>
+				</div>
+			</div>
 		</div>
 
       </div>

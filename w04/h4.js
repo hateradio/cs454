@@ -1,30 +1,99 @@
-/*jslint indent: 4, maxerr: 50, vars: true */
+/*jslint indent: 4, maxerr: 50, vars: true, browser: true, devel: true */
+/*global angular */
 
 var app = angular.module('todoApp', []);
 app.controller('TodoCtrl', function ($scope, $filter) {
 	'use strict';
 
-	var db = {
-		groups: [],
-		users: [],
-		tasks: [],
-		count: function (table) {
-			if (db[table]) {
-				return $filter('filter')(db[table], function (e) { return e.id > 0; }).length;
-			}
-			return null;
+	var db;
+
+	function Db() {
+		this.$tables = ['groups', 'users', 'tasks'];
+		this.tables = {};
+		this.create();
+	}
+
+	Db.KEY = 'cs454-hw04-fg';
+
+	Db.prototype.create = function () {
+		var db = this;
+		this.$tables.forEach(function (key) {
+			db.tables[key] = [];
+		});
+	};
+
+	Db.prototype.count = function (table) {
+		if (this.tables[table]) {
+			return $filter('filter')(this.tables[table], function (e) { return e.id > 0; }).length;
+		}
+		return null;
+	};
+
+	Db.prototype.persist = function () {
+		try {
+			console.log('Attempting to store:', JSON.stringify(this.tables, null, 2));
+			localStorage.setItem(Db.KEY, JSON.stringify(this.tables));
+		} catch (e) {
+			alert('Can\'t store localStorage');
 		}
 	};
 
-	function Group(name, description) {
-		this.name = name;
-		this.description = description;
-		this.id = db.groups.push(this);
+	Db.prototype.drop = function () {
+		try {
+			localStorage.removeItem(Db.KEY);
+			db.create();
+		} catch (e) {
+			alert('Could not remove localStorage');
+		}
+	};
+
+	Db.prototype.load = function () {
+		try {
+			var tables = JSON.parse(localStorage.getItem(Db.KEY)), key;
+
+			function restore(obj) {
+				if (key === 'groups') {
+					obj = new Group(obj);
+				} else if (key === 'users') {
+					obj = new User(obj);
+				} else if (key === 'tasks') {
+					obj = new Task(obj);
+				}
+			}
+
+			for (key in tables) {
+				if (tables.hasOwnProperty(key)) {
+					tables[key].forEach(restore);
+				}
+			}
+
+			// console.log(this);
+			$scope.db = this;
+		} catch (e) {
+			console.error('Could not load localStorage');
+			console.info(e.message);
+		}
+	};
+
+	db = new Db();
+
+	function Group(group) {
+		this.id = group.id;
+		this.name = group.name;
+
+		if (group.id) {
+			this.description = group.description;
+			db.tables.groups[group.id - 1] = this;
+		} else {
+			this.id = db.tables.groups.push(this);
+		}
+
+		// console.log($scope.db);
 	}
 
 	Group.prototype.hasUsers = function () {
 		var id = this.id;
-		return db.users.some(function (user) {
+		return db.tables.users.some(function (user) {
 			return user.groupId === id;
 		});
 	};
@@ -32,7 +101,7 @@ app.controller('TodoCtrl', function ($scope, $filter) {
 	Group.prototype.users = function (query) {
 		var id = this.id;
 		query = query ||  { groupId: id };
-		return $filter('filter')(db.users, query);
+		return $filter('filter')(db.tables.users, query);
 	};
 
 	Group.prototype.usersExcept = function (idList) {
@@ -45,7 +114,7 @@ app.controller('TodoCtrl', function ($scope, $filter) {
 	Group.prototype.addUser = function (state) {
 		var text = state.userName;
 		state.userName = null;
-		return text && text.trim() ? new User(text.trim(), this.id) : null;
+		return text && text.trim() ? new User({name: text.trim(), groupId: this.id}) : null;
 	};
 
 	Group.prototype.remove = function () {
@@ -53,17 +122,18 @@ app.controller('TodoCtrl', function ($scope, $filter) {
 			user.remove();
 		});
 
-		delete db.groups[this.id - 1];
+		delete db.tables.groups[this.id - 1];
 	};
 
-	Group.prototype.addTask = function (name) {
-		return name && name.trim() ? new Task(name.trim(), this.id) : null;
+	Group.prototype.addTask = function (text) {
+		text = text && text.trim();
+		return text ? new Task({text: text, groupId: this.id}) : null;
 	};
 
 	Group.prototype.tasks = function (query) {
 		var id = this.id;
 		query = query || { groupId: id };
-		return $filter('filter')(db.tasks, query);
+		return $filter('filter')(db.tables.tasks, query);
 	};
 
 	Group.prototype.unassignedTasks = function () {
@@ -87,29 +157,38 @@ app.controller('TodoCtrl', function ($scope, $filter) {
 		console.log($scope.ngroup);
 
 		delete $scope.ngroup;
-		return name && name.trim() ? new Group(name.trim(), description.trim()) : null;
+		console.log(name, description);
+		return name && name.trim() ? new Group({name: name.trim(), description: description.trim()}) : null;
 	};
 
-	function User(name, groupId) {
-		this.name = name;
-		this.groupId = groupId;
-		this.id = db.users.push(this);
+	function User(user) {
+		this.name = user.name;
+		this.groupId = user.groupId;
+
+		if (user.id) {
+			this.id = user.id;
+			db.tables.users[user.id - 1] = this;
+		} else {
+			this.id = db.tables.users.push(this);
+		}
+		$scope.db = db;
 	}
 
 	User.prototype.tasks = function () {
 		var id = this.id;
-		return $filter('filter')(db.tasks, { userId: id });
+		return $filter('filter')(db.tables.tasks, { userId: id });
 	};
 
 	User.prototype.hasTasks = function () {
 		var id = this.id;
-		return db.tasks.some(function (task) {
+		return db.tables.tasks.some(function (task) {
 			return task.userId === id;
 		});
 	};
 
-	User.prototype.addTask = function (name) {
-		return name && name.trim() ? new Task(name.trim(), this.groupId, this.id) : null;
+	User.prototype.addTask = function (text) {
+		text = text && text.trim();
+		return text ? new Task({text: text, groupId: this.groupId, userId: this.id}) : null;
 	};
 
 	User.prototype.remove = function () {
@@ -117,15 +196,21 @@ app.controller('TodoCtrl', function ($scope, $filter) {
 			task.remove();
 		});
 
-		delete db.users[this.id - 1];
+		delete db.tables.users[this.id - 1];
 	};
 
-	function Task(text, groupId, userId, done) {
-		this.done = !!done;
-		this.text = text;
-		this.groupId = groupId;
-		this.userId = userId;
-		this.id = db.tasks.push(this);
+	function Task(task) {
+		this.id = task.id;
+		this.done = !!task.done;
+		this.text = task.text;
+		this.groupId = task.groupId;
+		this.userId = task.userId;
+
+		if (task.id) {
+			db.tables.tasks[task.id - 1] = this;
+		} else {
+			this.id = db.tables.tasks.push(this);
+		}
 	}
 
 	Task.prototype.belongsTo = function (userId) {
@@ -143,44 +228,56 @@ app.controller('TodoCtrl', function ($scope, $filter) {
 	};
 
 	Task.prototype.remove = function () {
-		delete db.tasks[this.id - 1];
+		delete db.tables.tasks[this.id - 1];
 	};
 
-	var g1 = new Group('Create & Manage Groups', 'The first group');
-	var g2 = new Group('Tasks', 'The second group');
-	var g3 = new Group('Computer', 'The third group');
-	var g4 = new Group('Documentation', 'The fourth group');
+	function testData() {
+		var g = new Group({name: 'Create & Manage Groups', description: 'The first group'});
+		g = new Group({name: 'Tasks', description: 'The second group'});
+		g = new Group({name: 'Computer', description: 'The third group'});
+		g = new Group('Documentation', 'The fourth group');
 
-	var u1 = new User('User1', 1);
-	var u2 = new User('User2', 1);
-	var u3 = new User('User3', 2);
-	var u4 = new User('User4', 2);
-	var u5 = new User('User5', 3);
-	var u6 = new User('User6', 3);
-	var u7 = new User('User7', 4);
+		var u = new User({name: 'User1', groupId: 1});
+		u = new User({name: 'User2', groupId: 1});
+		u = new User({name: 'User3', groupId: 2});
+		u = new User({name: 'User4', groupId: 2});
+		u = new User({name: 'User5', groupId: 3});
+		u = new User({name: 'User6', groupId: 3});
+		u = new User({name: 'User7', groupId: 4});
 
-	var t1 = new Task('A group is a collection of Students.', 1, 1);
-	var t2 = new Task('A group should have a Node Module associated with it.', 1, 1, true);
-	var t3 = new Task('A group should have a "Description" property that outlines the module that is being presented.', 1, 1, true);
-	var t4 = new Task('Your application should allow Students to be added/removed from a group', 1, 2);
-	var t5 = new Task('Your app should allow groups to be deleted', 1, 2);
-	var t6 = new Task('Your application should allow new tasks to be created.', 2, 3, true);
-	var t7 = new Task('Your application should allow tasks to be assigned to individual members of a team.', 2, 3);
-	var t8 = new Task('Your app should allow tasks to be marked as done, not-done, and also be deleted.', 2, 3, true);
-	var t9 = new Task('T9', 2, 4);
-	var t10 = new Task('T10', 2, 4);
-	var t11 = new Task('T11', 2, 4);
-	var t12 = new Task('T12', 3, 6);
-	var t13 = new Task('T13', 3, 6);
-	var t14 = new Task('M1', 1);
-	t14 = new Task('M2', 1);
-	t14 = new Task('M3', 1);
+		var t = new Task({text: 'A group is a collection of Students.', groupId: 1, userId: 1});
+		t = new Task({text: 'A group should have a Node Module associated with it.', groupId: 1, userId: 1, done: true});
+		t = new Task({text: 'A group should have a "Description" property that outlines the module that is being presented.', groupId: 1, userId: 1, done: true});
+		t = new Task({text: 'Your application should allow Students to be added/removed from a group', groupId: 1, userId: 2});
+		t = new Task({text: 'Your app should allow groups to be deleted', groupId: 1, userId: 2});
+		t = new Task({text: 'Your application should allow new tasks to be created.', groupId: 2, userId: 3, done: true});
+		t = new Task({text: 'Your application should allow tasks to be assigned to individual members of a team.', groupId: 2, userId: 3});
+		t = new Task({text: 'Your app should allow tasks to be marked as done, not-done, and also be deleted.', groupId: 2, userId: 3, done: true});
+		t = new Task({text: 'T9', groupId: 2, userId: 4});
+		t = new Task({text: 'T10', groupId: 2, userId: 4});
+		t = new Task({text: 'T11', groupId: 2, userId: 4});
+		t = new Task({text: 'T12', groupId: 3, userId: 6});
+		t = new Task({text: 'T13', groupId: 3, userId: 6});
+		t = new Task({text: 'G1-t1', groupId: 1});
+		t = new Task({text: 'G1-t3', groupId: 1});
+		t = new Task({text: 'G1-t2', groupId: 1});
+	}
 
-	// console.log(db);
-	// console.info(Object.keys(db.tasks));
-	// console.info(db.tasks);
+	// db.load();
+	testData();
+	// console.info(Object.keys(db.tables.tasks));
+	// console.info(db.tables.tasks);
+
+	$scope.save = function () {
+		$scope.db.persist();
+	};
+
+	$scope.clear = function () {
+		$scope.db.drop();
+	};
 
 	$scope.db = db;
+	console.log(db.tables);
 });
 
 app.directive('addTask', function () {
@@ -194,7 +291,7 @@ app.directive('addTask', function () {
 		link: function (scope) {
 			scope.addTask = function () {
 				// console.log('entity', scope.entity, scope.taskName);
-				console.log(scope.users);
+				console.log(scope.entity);
 				if (scope.entity) {
 					scope.entity.addTask(scope.taskName);
 				}
@@ -226,7 +323,7 @@ app.directive('taskItem', function () {
 					scope.users = scope.group.users();
 				}
 			};
-			
+
 			scope.users = scope.updateUsers();
 
 			scope.click = function () {
