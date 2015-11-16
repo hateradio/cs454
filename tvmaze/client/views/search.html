@@ -1,0 +1,44 @@
+<div class="search-header">
+  <div class="container">
+
+    <div class="row">
+      <div class="col-md-12">
+
+        <form>
+          <h2><i class="glyphicon glyphicon-th-list"></i> TV Show Search</h2>
+          <p class="lead">Find your favorite TV shows</p>
+
+          <div class="input-group">
+            <input placeholder="Enter a show's name" type="text" class="form-control input-lg" ng-model="name" />
+            <span class="input-group-btn">
+            	<button
+                title="Search"
+                ng-click="search()"
+            		type="submit"
+            		class="btn btn-lg btn-info pull-right">
+            		Search
+            	</button>
+            </span>
+          </div>
+        </form>
+
+        <div ng-show="shows.length === 0" class="alert alert-danger" role="alert">
+          <p>Nothing found</p>
+        </div>
+
+        <div ng-if="shows.length">
+          <p class="alert alert-success">
+            <ng-pluralize count="shows.length"
+                 when="{'one': '1 show found', 'other': '{} shows found'}">
+            </ng-pluralize>
+            <hr/>
+          </p>
+
+          <div show-preview show="show.show" ng-repeat="show in shows"></div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</div>

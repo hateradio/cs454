@@ -95,13 +95,13 @@
 		}
 
 		function read(err, txt) {
-			if (err) {
-				throw err;
+			if (!err) {
+				// throw err;
+				try { prev = JSON.parse(txt); } catch (e) {}
 			}
 
-			try { prev = JSON.parse(txt); } catch (e) {}
-
 			prev.push(data);
+
 			write(prev);
 		}
 

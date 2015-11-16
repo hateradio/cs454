@@ -1,0 +1,28 @@
+<div class="container">
+  <div class="row">
+    <div class="col-md-5">
+      <div class="thumbnail">
+        <img ng-src="{{ show.image.original || 'https://placehold.it/300x300?text=No+Image' }}" width="100%" alt="{{ show.name }}" />
+      </div>
+    </div>
+    <div class="col-md-7">
+      <h2>{{ show.name }}</h2>
+      <p ng-bind-html="show.summary | trustHTML"></p>
+      <div class="row">
+        <div class="col-md-12">
+          <h3>Cast</h3>
+          <div ng-if="!show.cast.length">No information found.</div>
+        </div>
+        <div class="col-md-3 character-display" ng-repeat="cst in show.cast">
+          <div class="thumbnail">
+            <img ng-src="{{ cst.character.image.medium || 'https://placehold.it/100x140?text=?' }}" alt="{{ cst.person.name }}" width=100 />
+          </div>
+          <div class="caption">
+            <p><a target="_blank" ng-href="{{ cst.person.url }}">{{ cst.person.name }}</a> as "{{ cst.character.name }}"</p>
+            <p>{{ cst.person.sumary }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
