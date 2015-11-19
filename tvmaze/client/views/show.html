@@ -11,9 +11,9 @@
       <div class="row">
         <div class="col-md-12">
           <h3>Cast</h3>
-          <div ng-if="!show.cast.length">No information found.</div>
+          <div ng-if="!show._embedded.cast.length">No information found.</div>
         </div>
-        <div class="col-md-3 character-display" ng-repeat="cst in show.cast">
+        <div class="col-md-3 character-display" ng-repeat="cst in show._embedded.cast">
           <div class="thumbnail">
             <img ng-src="{{ cst.character.image.medium || 'https://placehold.it/100x140?text=?' }}" alt="{{ cst.person.name }}" width=100 />
           </div>

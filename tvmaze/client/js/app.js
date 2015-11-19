@@ -4,9 +4,7 @@ angular.module('app', [
     'search.controller',
     'search.service',
     'show.controller',
-    'show.service',
-    'cast.service',
-    'cast.controller'
+    'show.service'
   ])
   .filter('trustHTML', function ($sce) { // $sce service
     return function (html) {
@@ -25,18 +23,8 @@ angular.module('app', [
           templateUrl: 'views/show.html',
           controller: 'ShowController',
           resolve: {
-            show:function ($route, ShowService, CastService) {
-              var shows = ShowService.get({
-                id: $route.current.params.id
-              }, function () {
-                var cast = CastService.query({
-                  id: $route.current.params.id
-                }, function () {
-                  shows.cast = cast;
-                });
-              });
-
-              return shows;
+            show:function ($route, ShowService) {
+              return ShowService.get({ id: $route.current.params.id });
             }
           }
         })

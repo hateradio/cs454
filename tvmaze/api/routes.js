@@ -13,19 +13,10 @@ module.exports = function (app) {
   });
 
   app.get('/api/show/:id', function (req, res) {
+    var params = '?embed=cast';
     superagent
-      .get(config.tvmaze.url + '/shows/' + req.params.id)
+      .get(config.tvmaze.url + '/shows/' + req.params.id + params)
       .end(function (err, result) {
-        res.json(result.body);
-      });
-  });
-
-  app.get('/api/show/:id/cast', function (req, res) { // localhost:8080/api/show/8198/cast
-    console.log('getting', config.tvmaze.url + '/shows/' + req.params.id + '/cast')
-    superagent
-      .get(config.tvmaze.url + '/shows/' + req.params.id + '/cast')
-      .end(function (err, result) {
-        console.log(result.body);
         res.json(result.body);
       });
   });
