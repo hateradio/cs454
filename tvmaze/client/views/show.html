@@ -1,28 +1,43 @@
 <div class="container">
   <div class="row">
-    <div class="col-md-5">
+    <div class="col-xs-5">
       <div class="thumbnail">
-        <img ng-src="{{ show.image.original || 'https://placehold.it/300x300?text=No+Image' }}" width="100%" alt="{{ show.name }}" />
+        <img ng-src="{{ show.image.original || 'img/404-cover-lg.png' }}" width="100%" alt="{{ show.name }}" />
       </div>
     </div>
-    <div class="col-md-7">
+    <div class="col-xs-7">
       <h2>{{ show.name }}</h2>
       <p ng-bind-html="show.summary | trustHTML"></p>
       <div class="row">
-        <div class="col-md-12">
-          <h3>Cast</h3>
-          <div ng-if="!show._embedded.cast.length">No information found.</div>
+        <div id="genres" class="col-md-12">
+          <h3>Genres</h3>
+          <ul class="list-unstyled">
+            <li class="label label-success" ng-repeat="g in show.genres" ng-bind="g"></li>
+          </ul>
         </div>
-        <div class="col-md-3 character-display" ng-repeat="cst in show._embedded.cast">
-          <div class="thumbnail">
-            <img ng-src="{{ cst.character.image.medium || 'https://placehold.it/100x140?text=?' }}" alt="{{ cst.person.name }}" width=100 />
-          </div>
-          <div class="caption">
-            <p><a target="_blank" ng-href="{{ cst.person.url }}">{{ cst.person.name }}</a> as "{{ cst.character.name }}"</p>
-            <p>{{ cst.person.sumary }}</p>
+      </div>
+    </div>
+
+    <div class="col-xs-12">
+      <div id="cast" class="col-md-12">
+        <h3>Cast <span class="badge badge-success" ng-bind="show._embedded.cast.length"></span></h3>
+        <div ng-if="!show._embedded.cast.length">No information found.</div>
+
+        <div class="col-xs-6 col-md-4 col-lg-3 character-display" ng-repeat="cst in show._embedded.cast">
+          <div class="media">
+            <div class="media-left media-middle">
+              <a target="_blank" href="{{ cst.character.url }}">
+                <img ng-src="{{ cst.character.image.medium || 'img/404-cover-sm.png' }}" alt="{{ cst.person.name }}" width=100 />
+              </a>
+            </div>
+            <div class="media-body">
+              <h4 class="media-heading"><a ng-href="{{ cst.character.url }}" target="_blank">{{ cst.character.name }}</a></h4>
+              <p><a target="_blank" ng-href="{{ cst.person.url }}">{{ cst.person.name }}</a></p>
+            </div>
           </div>
         </div>
       </div>
+
     </div>
   </div>
 </div>

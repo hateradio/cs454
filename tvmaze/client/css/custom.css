@@ -4,5 +4,9 @@
 }
 
 .character-display {
-  height: 260px;
+  height: 160px;
+}
+
+#genres li {
+  margin-right: 3px
 }
