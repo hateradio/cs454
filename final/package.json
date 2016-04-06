@@ -1,0 +1,18 @@
+{
+  "name": "final-resource",
+  "version": "1.0.0",
+  "description": "Final: Showcasing request",
+  "main": "cli.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "fg",
+  "license": "MIT",
+  "dependencies": {
+    "request": "^2.67.0",
+    "express": "^4.13.3",
+    "pixl-xml": "^1.0.4",
+    "yargs": "^3.27.0",
+    "cheerio": "^0.19.0"
+  }
+}
